@@ -40,3 +40,9 @@ config ION_POOL_CACHE_POLICY
 	help
 	  Choose this option if need to explicity set cache policy of the
 	  pages in the page pool.
+
+config ION_HISI
+	tristate "Ion for Hisi"
+	depends on ARCH_HISI && ION
+	help
+	 Choose this option if you wish to use ion on an Hisilicon platform
