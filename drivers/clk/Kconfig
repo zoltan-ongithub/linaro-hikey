@@ -154,6 +154,8 @@ config COMMON_CLK_BEGIN_ACCOUNTING_FROM_BOOT
 
 source "drivers/clk/qcom/Kconfig"
 
+source "drivers/clk/hisilicon/Kconfig"
+
 endmenu
 
 source "drivers/clk/bcm/Kconfig"
