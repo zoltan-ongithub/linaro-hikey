@@ -699,45 +699,18 @@
 			pinctrl-0 = <&i2c2_pmx_func &i2c2_cfg_func>;
 			status = "ok";
 
-			/*
 			adv7533: adv7533@39 {
-				compatible = "adi,adv7511";
+				compatible = "adi,adv7533";
 				reg = <0x39>;
 				interrupt-parent = <&gpio1>;
 				interrupts = <1 2>;
-
-				gpio_pd = <&gpio0 4 0>;
+				pd-gpio = <&gpio0 4 0>;
 				adi,input-depth = <8>;
 				adi,input-colorspace = "rgb";
 				adi,input-clock = "1x";
-				adi,input-style = <1>;
-				adi,input-justification = "evenly";
+				adi,clock-delay = <0>;
+				adi,embedded-sync;
 			};
-			*/
-
-			packet: adv7533@70 {
-				compatible = "adv7533,packet";
-				reg = <0x38>;
-			};
-			main: adv7533@7a {
-				compatible = "adv7533,main";
-				reg = <0x39>;
-				has-regulator;
-				hdmi_vdd-supply = <&ldo15>;
-				hdmi_v1p2-supply = <&ldo22>;
-				gpio_int = <&gpio1 1 0>;
-				gpio_pd = <&gpio0 4 0>;
-				gpio_dsi_sel = <&gpio0 1 0>;
-			};
-			cec_dsi: adv7533@78 {
-				compatible = "adv7533,cec_dsi";
-				reg = <0x3c>;
-			};
-			edid: adv7533@7e {
-				compatible = "adv7533,edid";
-				reg = <0x3f>;
-			};
-
 		 };
 
 		display-subsystem {
@@ -777,8 +750,7 @@
 				clocks = <&clock_media  HI6220_DSI_PCLK>;
 				clock-names = "pclk_dsi";
 				vc = <0>;
-				//encoder-slave = <&adv7533>;
-
+				encoder-slave = <&adv7533>;
 			};
 		};
 
