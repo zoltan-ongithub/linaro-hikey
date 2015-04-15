@@ -989,6 +989,15 @@
 	};
 
 
+	tsensor: tsensor@0,f7030700 {
+		compatible = "hisilicon,tsensor";
+		reg = <0x0 0xf7030700 0x0 0x1000>;
+		interrupts = <0 7 0x4>;
+		clocks = <&clock_sys HI6220_TSENSOR_CLK>;
+		clock-names = "thermal_clk";
+		#thermal-sensor-cells = <1>;
+	};
+
 	thermal-zones {
 		local: local {
 			polling-delay-passive = <1000>; /* milliseconds */
