@@ -550,6 +550,8 @@ struct drm_connector_funcs {
 				   const struct drm_connector_state *state,
 				   struct drm_property *property,
 				   uint64_t *val);
+	/* optional mode connector wants to fall back to instead of 1024x768 */
+	int (*fallback_mode)(struct drm_connector *connector);
 };
 
 /**

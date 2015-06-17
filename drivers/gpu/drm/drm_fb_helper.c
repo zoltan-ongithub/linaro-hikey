@@ -1325,6 +1325,16 @@ again:
 	}
 
 create_mode:
+	/*
+	 * Synthetic mode timing is very unlikely to work on HDMI.  Instead
+	 * if there is a fallback mode, give up on trying to guess the forced
+	 * mode timing and just let the forced mode deal with it.
+	 */
+	if (fb_helper_conn->connector->funcs->fallback_mode) {
+		pr_err("%s: preferring fallback mode\n", __func__);
+		return NULL;
+	}
+
 	mode = drm_mode_create_from_cmdline_mode(fb_helper_conn->connector->dev,
 						 cmdline_mode);
 	list_add(&mode->head, &fb_helper_conn->connector->modes);
