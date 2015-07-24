@@ -179,7 +179,7 @@ static void hisi_thermal_disable_sensor(struct hisi_thermal_data *data)
 
 }
 
-static int hisi_thermal_get_temp(void *_sensor, long *temp)
+static int hisi_thermal_get_temp(void *_sensor, int *temp)
 {
 	struct hisi_thermal_sensor *sensor = _sensor;
 	struct hisi_thermal_data *data = sensor->thermal;
@@ -200,7 +200,7 @@ static int hisi_thermal_get_temp(void *_sensor, long *temp)
 
 	data->irq_bind_sensor = sensor_id;
 
-	dev_dbg(&data->pdev->dev, "id=%d, irq=%d, temp=%ld, thres=%d\n",
+	dev_dbg(&data->pdev->dev, "id=%d, irq=%d, temp=%d, thres=%d\n",
 		sensor->id, data->irq_enabled, *temp, sensor->thres_temp);
 	/*
 	 * Bind irq to sensor for two cases:
