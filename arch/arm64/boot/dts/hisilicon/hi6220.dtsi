@@ -900,6 +900,36 @@
 		#size-cells = <0x0>;
 		clocks = <&clock_sys HI6220_MMC2_CIUCLK>, <&clock_sys HI6220_MMC2_CLK>;
 		clock-names = "ciu", "biu";
+		bus-width = <0x4>;
+		broken-cd;
+		ti,non-removable;
+		non-removable;
+		/* WL_EN */
+		vmmc-supply = <&wlan_en_reg>;
+		pinctrl-names = "default", "idle";
+		pinctrl-0 = <&sdio_pmx_func &sdio_clk_cfg_func &sdio_cfg_func>;
+		pinctrl-1 = <&sdio_pmx_idle &sdio_clk_cfg_idle &sdio_cfg_idle>;
+
+		wlcore: wlcore@2 {
+			compatible = "ti,wl1835";
+			reg = <2>;      /* sdio func num */
+			/* WL_IRQ, WL_HOST_WAKE_GPIO1_3 */
+			interrupt-parent = <&gpio1>;
+			interrupts = <3 IRQ_TYPE_EDGE_RISING>;
+		};
+	};
+	wlan_en_reg: fixedregulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "wlan-en-regulator";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+
+		/* WLAN_EN GPIO for this board - GPIO_0_5 */
+		gpio = <&gpio0 5 0>;
+
+		/* WLAN card specific delay */
+		startup-delay-us = <70000>;
+		enable-active-high;
 	};
 
 	mtcmos {
