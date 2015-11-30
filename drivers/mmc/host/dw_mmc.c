@@ -915,6 +915,20 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
 		dev_err(&slot->mmc->class_dev,
 			"Timeout preparing command (cmd %#x arg %#x status %#x)\n",
 			cmd, arg, cmd_status);
+
+		/*
+		 * So, if the prep command times out because the card is stuck
+		 * in busy for whatever reason, just aborting here will muck
+		 * up the command request state machine. So be a little more
+		 * aggressive and reset the host.
+		 *
+		 * Though if this error happens before the first request, which
+		 * means the cur_slot value may be uninitialized. So set it here
+		 * if necessary.
+		 */
+		if (!host->cur_slot)
+			host->cur_slot = slot;
+		dw_mci_reset(host);
 		return;
 	}
 
