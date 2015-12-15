@@ -27,9 +27,17 @@
 #define ADE_OVLY1_TRANS_CFG_REG     (0x2C)
 #define ADE_CTRAN5_TRANS_CFG_REG    (0x40)
 #define ADE_EN_REG                  (0x100)
+#define INTR_INIT_STATE_CPU_0_REG   (0xC00)    /* CPU查询原始中断状态寄存器 */
+#define INTR_INIT_STATE_CPU_1_REG   (0xC04)    /* CPU查询原始中断状态寄存器 */
+#define INTR_MASK_STATE_CPU_0_REG   (0xC08)    /* CPU查询屏蔽后中断状态寄存器 */
+#define INTR_MASK_STATE_CPU_1_REG   (0xC0C)    /* CPU查询屏蔽后中断状态寄存器 */
 #define INTR_MASK_CPU_0_REG         (0xC10)
 #define INTR_MASK_CPU_1_REG         (0xC14)
+#define INTR_CLEAR_CPU_0_REG        (0xC18)    /* 上报CPU的中断的清除寄存器 */
+#define INTR_CLEAR_CPU_1_REG        (0xC1C)    /* 上报CPU的中断的清除寄存器 */
 #define ADE_FRM_DISGARD_CTRL_REG    (0xA4)
+#define ADE_SOFT_RST0_REG           (0x70)     /* 子模块软复位寄存器。 */
+#define ADE_SOFT_RST1_REG           (0x74)     /* 子模块软复位寄存器。 */
 #define ADE_SOFT_RST_SEL0_REG       (0x78)
 #define ADE_SOFT_RST_SEL1_REG       (0x7C)
 #define ADE_RELOAD_DIS0_REG         (0xAC)

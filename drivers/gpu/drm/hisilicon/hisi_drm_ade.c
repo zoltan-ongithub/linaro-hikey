@@ -110,7 +110,8 @@ struct hisi_drm_ade_crtc {
 	struct clk *media_noc_clk;
 	struct clk *ade_pix_clk;
 	bool power_on;
-
+	u32 res_switch_cmpl;
+	wait_queue_head_t wait_res_cmpl;
 };
 
 static int hisi_drm_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
@@ -128,7 +129,7 @@ static void ade_init(struct hisi_drm_ade_crtc *crtc_ade)
 
 	writel(cpu0_mask, ade_base + INTR_MASK_CPU_0_REG);
 	writel(cpu1_mask, ade_base + INTR_MASK_CPU_1_REG);
-	set_TOP_CTL_frm_end_start(ade_base, 2);
+	//set_TOP_CTL_frm_end_start(ade_base, 2);
 
 	/* disable wdma2 and wdma3 frame discard */
 	writel(0x0, ade_base + ADE_FRM_DISGARD_CTRL_REG);
@@ -448,9 +449,18 @@ static int hisi_drm_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
 		ade_base + ADE_CTRAN6_IMAGE_SIZE_REG);
 
 	/* enable ade and ldi */
+	crtc_ade->res_switch_cmpl = 0;
 	writel(ADE_ENABLE, ade_base + ADE_EN_REG);
-	set_TOP_CTL_frm_end_start(ade_base, 1);
+	//set_TOP_CTL_frm_end_start(ade_base, 1);
 	set_LDI_CTRL_ldi_en(ade_base, ADE_ENABLE);
+	if (wait_event_interruptible_timeout(crtc_ade->wait_res_cmpl, crtc_ade->res_switch_cmpl, HZ/4) <= 0) {
+		DRM_INFO("wait_event_interruptible_timeout wait_res_cmpl timeout!\n");
+		writel(0, ade_base + ADE_SOFT_RST_SEL0_REG);
+		writel(0, ade_base + ADE_SOFT_RST_SEL1_REG);
+		writel(0xffffffff, ade_base + ADE_SOFT_RST0_REG);
+		writel(0xffffffff, ade_base + ADE_SOFT_RST1_REG);
+	}
+	crtc_ade->res_switch_cmpl = 0;
 
 	DRM_DEBUG_DRIVER("mode_set_base exit successfully.\n");
 	return 0;
@@ -572,6 +582,31 @@ static int hisi_drm_ade_dts_parse(struct platform_device *pdev,
 static irqreturn_t ade_irq_handler(int irq, void *data)
 {
 	struct hisi_drm_ade_crtc *acrtc = data;
+	void __iomem *base = acrtc->ade_base;
+	u32 status0, status1;
+
+	status0 = readl(base + INTR_MASK_STATE_CPU_0_REG);
+	status1 = readl(base + INTR_MASK_STATE_CPU_1_REG);
+
+	/* check DMA error */
+	if ((status0 & ADE_ISR_DMA_ERROR) == ADE_ISR_DMA_ERROR) {
+		writel(ADE_ISR_DMA_ERROR, base + INTR_CLEAR_CPU_0_REG);
+		DRM_INFO("DMA error check irq\n");
+	}
+
+	if ((status1 & ADE_ISR1_RES_SWITCH_CMPL) == ADE_ISR1_RES_SWITCH_CMPL) {
+		writel(ADE_ISR1_RES_SWITCH_CMPL, base + INTR_CLEAR_CPU_1_REG);
+		//DRM_INFO("res switch cmpl irq\n");
+		acrtc->res_switch_cmpl = 1;
+		wake_up_interruptible_all(&acrtc->wait_res_cmpl);
+	}
+
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t ldi_irq_handler(int irq, void *data)
+{
+	struct hisi_drm_ade_crtc *acrtc = data;
 	//struct drm_crtc *crtc = &acrtc->base;
 	//struct drm_device *dev = crtc->dev;
 	void __iomem *base = acrtc->ade_base;
@@ -598,6 +633,8 @@ static irqreturn_t ade_irq_handler(int irq, void *data)
 static int hisi_ade_probe(struct platform_device *pdev)
 {
 	struct hisi_drm_ade_crtc *crtc_ade;
+	int ade_irq;
+	int ldi_irq;
 	int ret;
 
 	/* debug setting */
@@ -621,17 +658,37 @@ static int hisi_ade_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	ade_irq = platform_get_irq(pdev, 0);
+	if (ade_irq < 0) {
+		DRM_ERROR("failed to get ade irq\n");
+		return ade_irq;
+	}
+
+	ldi_irq = platform_get_irq(pdev, 1);
+	if (ldi_irq < 0) {
+		DRM_ERROR("failed to get ldi irq\n");
+		return ldi_irq;
+	}
+
 	ret = hisi_drm_crtc_create(crtc_ade);
 	if (ret) {
 		DRM_ERROR("failed to crtc creat\n");
 		return ret;
 	}
 
-	/* ldi irq init */
-	ret = request_irq(platform_get_irq(pdev, 0), ade_irq_handler, DRIVER_IRQ_SHARED,
-			  crtc_ade->drm_dev->driver->name, crtc_ade);
+	/* ade irq init */
+	ret = devm_request_irq(&pdev->dev, ade_irq, ade_irq_handler, DRIVER_IRQ_SHARED,
+			  "ade irq", crtc_ade);
 	if (ret)
 		return ret;
+
+	/* ldi irq init */
+	ret = devm_request_irq(&pdev->dev, ldi_irq, ldi_irq_handler, DRIVER_IRQ_SHARED,
+			  "ldi irq", crtc_ade);
+	if (ret)
+		return ret;
+
+	init_waitqueue_head(&crtc_ade->wait_res_cmpl);
 
 	DRM_DEBUG_DRIVER("drm_ade exit successfully.\n");
 
