@@ -569,6 +569,32 @@ static int hisi_drm_ade_dts_parse(struct platform_device *pdev,
 	return ret;
 }
 
+static irqreturn_t ade_irq_handler(int irq, void *data)
+{
+	struct hisi_drm_ade_crtc *acrtc = data;
+	//struct drm_crtc *crtc = &acrtc->base;
+	//struct drm_device *dev = crtc->dev;
+	void __iomem *base = acrtc->ade_base;
+	u32 status;
+
+	status = readl(base + LDI_MSK_INT_REG);
+	/* DRM_INFO("LDI IRQ: status=0x%X\n",status); */
+
+	/* vblank irq */
+	if (status & LDI_ISR_FRAME_END_INT) {
+		writel(LDI_ISR_FRAME_END_INT, base + LDI_INT_CLR_REG);
+		//drm_handle_vblank(dev, drm_crtc_index(crtc));
+		//DRM_INFO("frame end irq\n");
+	}
+
+	if (status & LDI_ISR_UNDER_FLOW_INT) {
+		writel(LDI_ISR_UNDER_FLOW_INT, base + LDI_INT_CLR_REG);
+		DRM_INFO("underflow irq\n");
+	}
+
+	return IRQ_HANDLED;
+}
+
 static int hisi_ade_probe(struct platform_device *pdev)
 {
 	struct hisi_drm_ade_crtc *crtc_ade;
@@ -600,6 +626,12 @@ static int hisi_ade_probe(struct platform_device *pdev)
 		DRM_ERROR("failed to crtc creat\n");
 		return ret;
 	}
+
+	/* ldi irq init */
+	ret = request_irq(platform_get_irq(pdev, 0), ade_irq_handler, DRIVER_IRQ_SHARED,
+			  crtc_ade->drm_dev->driver->name, crtc_ade);
+	if (ret)
+		return ret;
 
 	DRM_DEBUG_DRIVER("drm_ade exit successfully.\n");
 
