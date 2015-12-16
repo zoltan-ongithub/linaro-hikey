@@ -374,7 +374,7 @@ static void adv7511_set_link_config(struct adv7511 *adv7511,
 
 static void adv7511_dsi_config_tgen(struct adv7511 *adv7511)
 {
-	struct drm_display_mode *mode = adv7511->curr_mode;
+	struct drm_display_mode *mode = &adv7511->curr_mode;
 	unsigned int hsw, hfp, hbp, vsw, vfp, vbp, hd, vd;
 
 	hsw = mode->hsync_end - mode->hsync_start;
@@ -856,7 +856,7 @@ static void adv7511_mode_set(struct adv7511 *adv7511,
 	regmap_update_bits(adv7511->regmap, 0x17,
 		0x60, (vsync_polarity << 6) | (hsync_polarity << 5));
 
-	adv7511->curr_mode = adj_mode;
+	memcpy(&adv7511->curr_mode, adj_mode, sizeof(adv7511->curr_mode));
 	/*
 	 * TODO Test first order 4:2:2 to 4:4:4 up conversion method, which is
 	 * supposed to give better results.
