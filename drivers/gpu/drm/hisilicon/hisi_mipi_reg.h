@@ -13,9 +13,18 @@
 #ifndef __HISI_MIPI_REG_H__
 #define __HISI_MIPI_REG_H__
 
-#include "hisi_drm_dsi.h"
-
+extern u8 *reg_base_mipi_dsi;
 #define get_dsi_virtual_addr()              (reg_base_mipi_dsi)
+#define outp32(addr, val) writel(val, addr)
+#define outp16(addr, val) writew(val, addr)
+#define outp8(addr, val) writeb(val, addr)
+#define outp(addr, val) outp32(addr, val)
+
+#define inp32(addr) readl(addr)
+#define inp16(addr) readw(addr)
+#define inp8(addr) readb(addr)
+#define inp(addr) inp32(addr)
+
 
 /* MIPIDSI_OFFSET_2 based on EDC: to be fixed */
 #define MIPIDSI_VERSION_ADDR                (0x0)        /* Version of the DSI host controller */

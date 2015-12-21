@@ -17,7 +17,6 @@
 #include <drm/drm_gem_cma_helper.h>
 
 #include "hisi_drm_ade.h"
-#include "hisi_drm_dsi.h"
 #include "hisi_drm_fb.h"
 #ifdef CONFIG_DRM_HISI_FBDEV
 #include "hisi_drm_fbdev.h"
@@ -66,7 +65,6 @@ static int hisi_drm_sub_drivers_init(struct drm_device *drm_dev)
 
 #ifdef CONFIG_DRM_HISI_FBDEV
 /* err_fbdev_init:*/
-	hisi_drm_dsi_exit();
 #endif
 
 	return ret;
