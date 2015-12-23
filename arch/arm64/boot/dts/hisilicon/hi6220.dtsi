@@ -29,13 +29,12 @@
 			clock-latency = <0>;
 			operating-points = <
 				/* kHz */
-				1200000  0
-				960000   0
-				729000   0
-				432000   0
-				208000   0
+				1200000  1330000
+				960000   1180000
+				729000   1090000
+				432000   1040000
+				208000   1040000
 			>;
-			#cooling-cells = <2>; /* min followed by max */
 			cpu-idle-states = <&CPU_SLEEP_0_0 &CLUSTER_SLEEP_0>;
 		};
 		cpu1: cpu@1 {
@@ -64,7 +63,6 @@
 			device_type = "cpu";
 			reg = <0x0 0x100>;
 			enable-method = "psci";
-			clock-latency = <0>;
 			cpu-idle-states = <&CPU_SLEEP_0_0 &CLUSTER_SLEEP_0>;
 		};
 		cpu5: cpu@5 {
@@ -90,7 +88,8 @@
 		};
 
 		cpu-map {
-			cluster0 {
+			cluster0: cluster0 {
+				#cooling-cells = <2>; /* min followed by max */
 				core0 {
 					cpu = <&cpu0>;
 				};
@@ -104,7 +103,8 @@
 					cpu = <&cpu3>;
 				};
 			};
-			cluster1 {
+			cluster1: cluster1 {
+				#cooling-cells = <2>; /* min followed by max */
 				core0 {
 					cpu = <&cpu4>;
 				};
@@ -1223,7 +1223,7 @@
 			};
 		};
 
-		cluster1: cluster1 {
+		cls1: cls1 {
 			polling-delay-passive = <1000>; /* milliseconds */
 			polling-delay = <5000>; /* milliseconds */
 
@@ -1248,31 +1248,32 @@
 			};
 		};
 
-		cluster0: cluster0 {
-			polling-delay-passive = <1000>; /* milliseconds */
-			polling-delay = <5000>; /* milliseconds */
+		cls0: cls0 {
+			polling-delay = <1000>;
+			polling-delay-passive = <100>;
+			sustainable-power = <3325>;
 
 			/* sensor	ID */
 			thermal-sensors = <&tsensor  2>;
 
 			trips {
-				cluster0_alert: cluster0_alert {
-					temperature = <50000>; /* millicelsius */
-					hysteresis = <2000>; /* millicelsius */
+				threshold: trip-point@0 {
+					temperature = <65000>;
+					hysteresis = <1000>;
 					type = "passive";
 				};
-				cluster0_crit: cluster0_crit {
-					temperature = <90000>; /* millicelsius */
-					hysteresis = <2000>; /* millicelsius */
-					type = "critical";
+				target: trip-point@1 {
+					temperature = <75000>;
+					hysteresis = <1000>;
+					type = "passive";
 				};
 			};
 
 			cooling-maps {
 				map0 {
-					trip = <&cluster0_alert>;
-					cooling-device =
-					    <&cpu0 4 THERMAL_NO_LIMIT>;
+					trip = <&target>;
+					contribution = <1024>;
+					cooling-device = <&cluster0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
 				};
 			};
 		};
