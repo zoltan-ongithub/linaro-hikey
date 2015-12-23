@@ -1,9 +1,9 @@
 #
 # Copyright (C) 2010-2011 ARM Limited. All rights reserved.
-#
+# 
 # This program is free software and is provided to you under the terms of the GNU General Public License version 2
 # as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
-#
+# 
 # A copy of the licence is included with the program, and can also be obtained from Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
@@ -23,8 +23,23 @@ MALI_UPPER_HALF_SCHEDULING ?= 1
 MALI_ENABLE_CPU_CYCLES ?= 0
 
 # For customer releases the Linux Device Drivers will be provided as ARM proprietary and GPL releases:
-# The in-tree driver will only use the GPL releases.
-ccflags-y += -I$(src)/linux/license/gpl
+# The ARM proprietary product will only include the license/proprietary directory
+# The GPL product will only include the license/gpl directory
+ifeq ($(wildcard $(src)/linux/license/gpl/*),)
+    ccflags-y += -I$(src)/linux/license/proprietary
+    ifeq ($(CONFIG_MALI400_PROFILING),y)
+        $(error Profiling is incompatible with non-GPL license)
+    endif
+    ifeq ($(CONFIG_PM_RUNTIME),y)
+        $(error Runtime PM is incompatible with non-GPL license)
+    endif
+    ifeq ($(CONFIG_DMA_SHARED_BUFFER),y)
+        $(error DMA-BUF is incompatible with non-GPL license)
+    endif
+    $(error Linux Device integration is incompatible with non-GPL license)
+else
+    ccflags-y += -I$(src)/linux/license/gpl
+endif
 
 ifeq ($(USING_GPU_UTILIZATION), 1)
     ifeq ($(USING_DVFS), 1)
@@ -45,11 +60,20 @@ mali-y += \
 	linux/mali_osk_mali.o \
 	linux/mali_osk_notification.o \
 	linux/mali_osk_time.o \
-	linux/mali_osk_timers.o
+	linux/mali_osk_timers.o \
+	linux/mali_osk_bitmap.o
 
 mali-y += linux/mali_memory.o linux/mali_memory_os_alloc.o
 mali-y += linux/mali_memory_external.o
 mali-y += linux/mali_memory_block_alloc.o
+mali-y += linux/mali_memory_swap_alloc.o
+
+mali-y += \
+	linux/mali_memory_manager.o \
+	linux/mali_memory_virtual.o \
+	linux/mali_memory_util.o \
+	linux/mali_memory_cow.o \
+	linux/mali_memory_defer_bind.o
 
 mali-y += \
 	linux/mali_ukk_mem.o \
@@ -63,7 +87,6 @@ mali-y += \
 mali-y += \
 	common/mali_kernel_core.o \
 	linux/mali_kernel_linux.o \
-	common/mali_kernel_descriptor_mapping.o \
 	common/mali_session.o \
 	linux/mali_device_pause_resume.o \
 	common/mali_kernel_vsync.o \
@@ -98,8 +121,9 @@ mali-y += \
 	linux/mali_pmu_power_up_down.o \
 	__malidrv_build_info.o
 
-EXTRA_DEFINES += -DMALI_FAKE_PLATFORM_DEVICE=1
-mali-y += platform/hikey/mali_hikey.o
+ifneq ($(MALI_PLATFORM_FILES),)
+	mali-y += $(MALI_PLATFORM_FILES:.c=.o)
+endif
 
 mali-$(CONFIG_MALI400_PROFILING) += linux/mali_ukk_profiling.o
 mali-$(CONFIG_MALI400_PROFILING) += linux/mali_osk_profiling.o
@@ -137,7 +161,7 @@ ccflags-$(CONFIG_MALI400_UMP) += -I$(src)/../../ump/include/ump
 ccflags-$(CONFIG_MALI400_DEBUG) += -DDEBUG
 
 # Use our defines when compiling
-ccflags-y += -I$(src) -I$(src)/include -I$(src)/common -I$(src)/linux -I$(src)/platform
+ccflags-y += -I$(src) -I$(src)/include -I$(src)/common -I$(src)/linux -I$(src)/platform -Wno-date-time
 
 # Get subversion revision number, fall back to only ${MALI_RELEASE_NAME} if no svn info is available
 MALI_RELEASE_NAME=$(shell cat $(src)/.version 2> /dev/null)

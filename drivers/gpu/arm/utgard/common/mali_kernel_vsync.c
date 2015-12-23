@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2011-2014 ARM Limited. All rights reserved.
- *
+ * Copyright (C) 2011-2015 ARM Limited. All rights reserved.
+ * 
  * This program is free software and is provided to you under the terms of the GNU General Public License version 2
  * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- *
+ * 
  * A copy of the licence is included with the program, and can also be obtained from Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
@@ -42,3 +42,4 @@ _mali_osk_errcode_t _mali_ukk_vsync_event_report(_mali_uk_vsync_event_report_s *
 	MALI_DEBUG_PRINT(4, ("Received VSYNC event: %d\n", event));
 	MALI_SUCCESS;
 }
+

@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2011-2014 ARM Limited. All rights reserved.
- *
+ * Copyright (C) 2011-2015 ARM Limited. All rights reserved.
+ * 
  * This program is free software and is provided to you under the terms of the GNU General Public License version 2
  * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
- *
+ * 
  * A copy of the licence is included with the program, and can also be obtained from Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
@@ -26,7 +26,7 @@ struct mali_hw_core {
 	const char *description;          /**< Name of unit (as specified in device configuration) */
 };
 
-#define MALI_REG_POLL_COUNT_FAST 1000
+#define MALI_REG_POLL_COUNT_FAST 1000000
 #define MALI_REG_POLL_COUNT_SLOW 1000000
 
 /*
