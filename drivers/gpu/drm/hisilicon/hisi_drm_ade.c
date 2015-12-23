@@ -647,6 +647,7 @@ static irqreturn_t ldi_irq_handler(int irq, void *data)
 	//struct drm_device *dev = crtc->dev;
 	void __iomem *base = acrtc->ade_base;
 	u32 status;
+	u32 irq_mask;
 
 	status = readl(base + LDI_MSK_INT_REG);
 	/* DRM_INFO("LDI IRQ: status=0x%X\n",status); */
@@ -661,6 +662,17 @@ static irqreturn_t ldi_irq_handler(int irq, void *data)
 	if (status & LDI_ISR_UNDER_FLOW_INT) {
 		writel(LDI_ISR_UNDER_FLOW_INT, base + LDI_INT_CLR_REG);
 		DRM_INFO("underflow irq\n");
+
+		/* clear underflow irq */
+		irq_mask = readl(base + LDI_INT_EN_REG);
+		irq_mask = irq_mask & (~LDI_ISR_UNDER_FLOW_INT);
+		writel(irq_mask, base + LDI_INT_EN_REG);
+
+		/* reset the whole ade */
+		writel(0, base + ADE_SOFT_RST_SEL0_REG);
+		writel(0, base + ADE_SOFT_RST_SEL1_REG);
+		writel(0xffffffff, base + ADE_SOFT_RST0_REG);
+		writel(0xffffffff, base + ADE_SOFT_RST1_REG);
 	}
 
 	return IRQ_HANDLED;
