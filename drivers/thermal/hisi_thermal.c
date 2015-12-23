@@ -17,6 +17,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/cpu_cooling.h>
 #include <linux/cpufreq.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
@@ -59,7 +60,35 @@ struct hisi_thermal_data {
 	bool irq_enabled;
 
 	void __iomem *regs;
+
+	struct cpumask cluster;
+	struct thermal_cooling_device *cdevs[2];
 };
+
+struct cluster_power_coefficients {
+	int dyn_coeff;
+	int static_cpu;
+	int static_cluster;
+};
+
+struct cluster_power_coefficients cluster_data = {
+	.dyn_coeff      = 299,
+	.static_cpu     = 14,
+	.static_cluster = 5,
+};
+
+/* voltage in uV and temperature in mC */
+static int get_static_power(cpumask_t *cpumask, int interval,
+		unsigned long u_volt, u32 *power)
+{
+	int nr_cpus = cpumask_weight(cpumask);
+
+	*power  = nr_cpus * cluster_data.static_cpu;
+	*power += 2 * cluster_data.static_cluster;
+
+	return 0;
+}
+
 
 /* in millicelsius */
 static inline int _step_to_temp(int step)
@@ -283,8 +312,11 @@ static int hisi_thermal_probe(struct platform_device *pdev)
 {
 	struct hisi_thermal_data *data;
 	struct resource *res;
+	struct device_node *np;
+	char node[16];
 	int i;
 	int ret;
+	int cpu;
 
 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
 	if (!data)
@@ -329,6 +361,27 @@ static int hisi_thermal_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "failed to enable thermal clk: %d\n", ret);
 		return ret;
+	}
+
+	for_each_possible_cpu(cpu)
+		cpumask_set_cpu(cpu, &data->cluster);
+
+	np = of_find_node_by_name(NULL, "cluster0");
+
+	if (!np) {
+		dev_info(&pdev->dev, "Node not found: %s\n", node);
+	}
+
+	data->cdevs[i] =
+		of_cpufreq_power_cooling_register(np,
+						  &data->cluster,
+						  cluster_data.dyn_coeff,
+						  get_static_power);
+
+	if (IS_ERR(data->cdevs[i])) {
+		dev_warn(&pdev->dev,
+			"Error registering cooling device: %ld\n",
+			PTR_ERR(data->cdevs[i]));
 	}
 
 	for (i = 0; i < HISI_MAX_SENSORS; ++i) {
@@ -412,7 +465,11 @@ static struct platform_driver hisi_thermal_driver = {
 	.remove	= hisi_thermal_remove,
 };
 
-module_platform_driver(hisi_thermal_driver);
+static int __init hisi_thermal_init(void)
+{
+	return platform_driver_register(&hisi_thermal_driver);
+}
+late_initcall(hisi_thermal_init);
 
 MODULE_AUTHOR("Xinwei Kong <kong.kongxinwei@hisilicon.com>");
 MODULE_AUTHOR("Leo Yan <leo.yan@linaro.org>");
