@@ -184,6 +184,9 @@ config REBOOT_REASON_SRAM
 	  mode on the next boot. This option enables support for communicating
 	  this reason to the bootloader via SRAM
 
+config HAVE_ARM_SMCCC
+	bool
+
 source "drivers/firmware/google/Kconfig"
 source "drivers/firmware/efi/Kconfig"
 
