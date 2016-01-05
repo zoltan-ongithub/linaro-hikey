@@ -61,8 +61,7 @@ struct hisi_thermal_data {
 
 	void __iomem *regs;
 
-	struct cpumask cluster;
-	struct thermal_cooling_device *cdevs[2];
+	struct thermal_cooling_device *cdevs;
 };
 
 struct cluster_power_coefficients {
@@ -308,15 +307,36 @@ static void hisi_thermal_toggle_sensor(struct hisi_thermal_sensor *sensor,
 		on ? THERMAL_DEVICE_ENABLED : THERMAL_DEVICE_DISABLED);
 }
 
+static int hisi_thermal_register_cooling_device(struct platform_device *pdev,
+						struct hisi_thermal_data *data)
+{
+	struct device_node *np;
+
+	np = of_find_node_by_name(NULL, "cluster0");
+	if (!np) {
+		dev_err(&pdev->dev, "Cluster0 node not founds\n");
+		return -ENODEV;
+	}
+
+	data->cdevs = of_cpufreq_power_cooling_register(np,
+			cpu_present_mask, cluster_data.dyn_coeff,
+			get_static_power);
+	if (IS_ERR(data->cdevs)) {
+		dev_err(&pdev->dev,
+			"Error registering cooling device: %ld\n",
+			PTR_ERR(data->cdevs));
+		return PTR_ERR(data->cdevs);
+	}
+
+	return 0;
+}
+
 static int hisi_thermal_probe(struct platform_device *pdev)
 {
 	struct hisi_thermal_data *data;
 	struct resource *res;
-	struct device_node *np;
-	char node[16];
 	int i;
 	int ret;
-	int cpu;
 
 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
 	if (!data)
@@ -363,26 +383,7 @@ static int hisi_thermal_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	for_each_possible_cpu(cpu)
-		cpumask_set_cpu(cpu, &data->cluster);
-
-	np = of_find_node_by_name(NULL, "cluster0");
-
-	if (!np) {
-		dev_info(&pdev->dev, "Node not found: %s\n", node);
-	}
-
-	data->cdevs[i] =
-		of_cpufreq_power_cooling_register(np,
-						  &data->cluster,
-						  cluster_data.dyn_coeff,
-						  get_static_power);
-
-	if (IS_ERR(data->cdevs[i])) {
-		dev_warn(&pdev->dev,
-			"Error registering cooling device: %ld\n",
-			PTR_ERR(data->cdevs[i]));
-	}
+	hisi_thermal_register_cooling_device(pdev, data);
 
 	for (i = 0; i < HISI_MAX_SENSORS; ++i) {
 		ret = hisi_thermal_register_sensor(pdev, data,
