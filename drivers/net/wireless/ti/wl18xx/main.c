@@ -1368,8 +1368,7 @@ static int wl18xx_conf_init(struct wl1271 *wl, struct device *dev)
 	if (fw->size != WL18XX_CONF_SIZE) {
 		wl1271_error("configuration binary file size is wrong, expected %zu got %zu",
 			     WL18XX_CONF_SIZE, fw->size);
-		ret = -EINVAL;
-		goto out;
+		goto out_fallback;
 	}
 
 	conf_file = (struct wlcore_conf_file *) fw->data;
@@ -1378,16 +1377,14 @@ static int wl18xx_conf_init(struct wl1271 *wl, struct device *dev)
 		wl1271_error("configuration binary file magic number mismatch, "
 			     "expected 0x%0x got 0x%0x", WL18XX_CONF_MAGIC,
 			     conf_file->header.magic);
-		ret = -EINVAL;
-		goto out;
+		goto out_fallback;
 	}
 
 	if (conf_file->header.version != cpu_to_le32(WL18XX_CONF_VERSION)) {
 		wl1271_error("configuration binary file version not supported, "
 			     "expected 0x%08x got 0x%08x",
 			     WL18XX_CONF_VERSION, conf_file->header.version);
-		ret = -EINVAL;
-		goto out;
+		goto out_fallback;
 	}
 
 	memcpy(&wl->conf, &conf_file->core, sizeof(wl18xx_conf));
@@ -1404,9 +1401,10 @@ out_fallback:
 	memcpy(&priv->conf, &wl18xx_default_priv_conf, sizeof(priv->conf));
 
 	/* For now we just fallback */
-	return 0;
+	ret = 0;
 
 out:
+	/* release_firmware() is checking for NULL */
 	release_firmware(fw);
 	return ret;
 }
