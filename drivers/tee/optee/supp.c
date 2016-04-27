@@ -23,6 +23,7 @@ void optee_supp_init(struct optee_supp *supp)
 	mutex_init(&supp->supp_mutex);
 	init_completion(&supp->data_to_supp);
 	init_completion(&supp->data_from_supp);
+	atomic_set(&supp->available, 1);
 }
 
 void optee_supp_uninit(struct optee_supp *supp)

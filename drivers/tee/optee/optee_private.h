@@ -47,6 +47,8 @@ struct optee_wait_queue {
 };
 
 struct optee_supp {
+	atomic_t available;
+
 	u32 func;
 	u32 ret;
 	size_t num_params;
